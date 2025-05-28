@@ -1,15 +1,15 @@
 import streamlit as st
 from azure.storage.blob import BlobServiceClient
 import os
-import pymssql
+import pyodbc
 import uuid
 import json
 from dotenv import load_dotenv
 load_dotenv()
 
-blobConnectionString = os.getenv("BLOB_CONNECTION_STRING")
-blobContainerName = os.getenv("BLOB_CONTAINER_NAME")
-blobaccountName = os.getenv("BLOB_ACCOUNT_NAME")
+CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=stadevlab001eastus1;EndpointSuffix=core.windows.net"
+CONTAINER_NAME = "fotos"
+ACCOUNT_NAME = "stadevlab001eastus1"
 
 SQL_SERVER = os.getenv("SQL_SERVER")
 SQL_DATABASE = os.getenv("SQL_DATABASE")
@@ -26,18 +26,18 @@ product_image = st.file_uploader("Imagem do Produto", type=["jpg", "jpeg", "png"
 
 #Salvar image on blob storage
 def upload_blob(file):
-    blob_service_client = BlobServiceClient.from_connection_string(blobConnectionString)
-    container_client = blob_service_client.get_container_client(blobContainerName)
+    blob_service_client = BlobServiceClient.from_connection_string(CONNECTION_STRING)
+    container_client = blob_service_client.get_container_client(CONTAINER_NAME)
     blob_name = str(uuid.uuid4()) + file.name
     blob_client = container_client.get_blob_client(blob_name)
     blob_client.upload_blob(file.read(), overwrite=True)
-    image_url = f"https://{blobaccountName}.blob.core.windows.net/{blobContainerName}/{blob_name}"
+    image_url = f"https://{ACCOUNT_NAME}.blob.core.windows.net/{CONTAINER_NAME}/{blob_name}"
     return image_url
 
 def insert_product(product_name, product_price, product_description, product_image):
     try:
         image_url = upload_blob(product_image)
-        conn  = pymssql.connect(server=SQL_SERVER, user=SQL_USER, password=SQL_PASSWORD, database=SQL_DATABASE)
+        conn = pyodbc.connect(f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={SQL_SERVER};DATABASE={SQL_DATABASE};UID={SQL_USER};PWD={SQL_PASSWORD}")
         cursor = conn.cursor()
         insert_sql = f"INSERT INTO Produtos (nome, preco, descricao, imagem_url) VALUES ('{product_name}', {product_price}, '{product_description}', '{image_url}')"
         print(insert_sql)
@@ -53,7 +53,7 @@ def insert_product(product_name, product_price, product_description, product_ima
 
 def list_products():
     try:
-        conn  = pymssql.connect(server=SQL_SERVER, user=SQL_USER, password=SQL_PASSWORD, database=SQL_DATABASE)
+        conn = pyodbc.connect(f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={SQL_SERVER};DATABASE={SQL_DATABASE};UID={SQL_USER};PWD={SQL_PASSWORD}")
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM Produtos")
         rows = cursor.fetchall()
@@ -101,6 +101,3 @@ st.header("Produtos Cadastrados")
 if st.button("Listar Produtos"):
     list_products_screen()
     return_message = "Produtos listados com sucesso"
-
-# Instalação das dependências necessárias
-os.system('pip install streamlit azure-storage-blob pymssql python-dotenv')
