@@ -15,6 +15,7 @@ Este projeto é uma aplicação web para cadastro e listagem de produtos, desenv
 - Upload de imagens para o Azure Blob Storage.
 - Listagem dos produtos cadastrados, exibindo informações e imagem.
 - Interface web simples e intuitiva com Streamlit.
+- Exclusão de produto específico ou limpeza de todos criados.
 
 ## Tecnologias Utilizadas
 
