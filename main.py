@@ -7,7 +7,7 @@ import json
 from dotenv import load_dotenv
 load_dotenv()
 
-CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=stadevlab001eastus1;AccountKey=8bZ1WGGJE5TtXFGElzYwrE8AO2a6tTyQzBHqcudhjBAMP0XUenCBnX56t6DqV9CnM+lhuF0x2p8p+AStja97WQ==;EndpointSuffix=core.windows.net"
+CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=stadevlab001eastus1;EndpointSuffix=core.windows.net"
 CONTAINER_NAME = "fotos"
 ACCOUNT_NAME = "stadevlab001eastus1"
 
@@ -74,9 +74,9 @@ def list_products_screen():
             col = cols[i % cards_por_linha]
             with col:
                 st.markdown(f"### {product[1]}")  # nome
-                st.write(f"**Descrição:** {product[3]}")  # descricao
+                st.write(f"**Descrição:** {product[2]}")  # descricao
                 try:
-                    preco = float(product[2])
+                    preco = float(product[3])
                     st.write(f"**Preço:** R$ {preco:.2f}")  # preco
                 except (ValueError, TypeError):
                     st.write(f"**Preço:** {product[2]}")  # mostra o valor como está
@@ -101,3 +101,65 @@ st.header("Produtos Cadastrados")
 if st.button("Listar Produtos"):
     list_products_screen()
     return_message = "Produtos listados com sucesso"
+
+def delete_all_products():
+    try:
+        conn = pyodbc.connect(f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={SQL_SERVER};DATABASE={SQL_DATABASE};UID={SQL_USER};PWD={SQL_PASSWORD}")
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM Produtos")
+        conn.commit()
+        conn.close()
+        st.success("Todos os produtos foram excluídos!")
+    except Exception as e:
+        st.error(f"Erro ao excluir todos os produtos: {e}")
+
+if st.button("Limpar lista de produtos"):
+    delete_all_products()
+    list_products_screen()
+
+def delete_product_by_field(nome=None, descricao=None, preco=None):
+    try:
+        conn = pyodbc.connect(f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={SQL_SERVER};DATABASE={SQL_DATABASE};UID={SQL_USER};PWD={SQL_PASSWORD}")
+        cursor = conn.cursor()
+        conditions = []
+        params = []
+        if nome:
+            conditions.append("nome = ?")
+            params.append(nome)
+        if descricao:
+            conditions.append("descricao = ?")
+            params.append(descricao)
+        if preco is not None:
+            # Tolerância de 1 centavo para comparação de float
+            conditions.append("ABS(preco - ?) < 0.01")
+            params.append(preco)
+        if not conditions:
+            st.warning("Preencha pelo menos um campo para excluir um produto.")
+            return
+        where_clause = " AND ".join(conditions)
+        sql = f"DELETE FROM Produtos WHERE {where_clause}"
+        cursor.execute(sql, params)
+        conn.commit()
+        conn.close()
+        st.success("Produto(s) excluído(s) com sucesso!")
+    except Exception as e:
+        st.error(f"Erro ao excluir produto(s): {e}")
+
+with st.form("delete_product_form"):
+    del_nome = st.text_input("Nome do produto para excluir (opcional)")
+    del_descricao = st.text_input("Descrição do produto para excluir (opcional)")
+    del_preco = st.text_input("Preço do produto para excluir (opcional)")
+    submitted = st.form_submit_button("Excluir Produto")
+    if submitted:
+        preco_val = None
+        if del_preco:
+            preco_str = del_preco.replace(",", ".")  # Permite vírgula ou ponto
+            try:
+                preco_val = float(del_preco)
+            except ValueError:
+                st.warning("Preço inválido, digite um número ou deixe em branco.")
+        delete_product_by_field(
+            nome=del_nome if del_nome else None,
+            descricao=del_descricao if del_descricao else None,
+            preco=preco_val
+        )
