@@ -7,7 +7,7 @@ import json
 from dotenv import load_dotenv
 load_dotenv()
 
-CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=stadevlab001eastus1;EndpointSuffix=core.windows.net"
+CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=stadevlab001eastus1;AccountKey=8bZ1WGGJE5TtXFGElzYwrE8AO2a6tTyQzBHqcudhjBAMP0XUenCBnX56t6DqV9CnM+lhuF0x2p8p+AStja97WQ==;EndpointSuffix=core.windows.net"
 CONTAINER_NAME = "fotos"
 ACCOUNT_NAME = "stadevlab001eastus1"
 
